@@ -2,7 +2,7 @@ import librosa
 import numpy as np
 import torch
 from model import *
-
+import soundfile as sf
 
 def wav2spectrum(filename):
     x, sr = librosa.load(filename)
@@ -21,7 +21,9 @@ def spectrum2wav(spectrum, sr, outfile):
         S = a * np.exp(1j * p)
         x = librosa.istft(S)
         p = np.angle(librosa.stft(x, N_FFT))
-    librosa.output.write_wav(outfile, x, sr)
+    
+    sf.write(outfile, x, sr, 'PCM_24')
+    #librosa.output.write_wav(outfile, x, sr)
 
 
 def wav2spectrum_keep_phase(filename):
@@ -40,17 +42,15 @@ def spectrum2wav_keep_phase(spectrum, p, sr, outfile):
         S = a * np.exp(1j * p)
         x = librosa.istft(S)
         p = np.angle(librosa.stft(x, N_FFT))
-    librosa.output.write_wav(outfile, x, sr)
-
+    sf.write(outfile, x, sr, 'PCM_24')
+    #librosa.output.write_wav(outfile, x, sr)
 
 def compute_content_loss(a_C, a_G):
     """
     Compute the content cost
-
     Arguments:
     a_C -- tensor of dimension (1, n_C, n_H, n_W)
     a_G -- tensor of dimension (1, n_C, n_H, n_W)
-
     Returns:
     J_content -- scalar that you compute using equation 1 above
     """
@@ -70,7 +70,6 @@ def gram(A):
     """
     Argument:
     A -- matrix of shape (n_C, n_L)
-
     Returns:
     GA -- Gram matrix of shape (n_C, n_C)
     """
@@ -83,7 +82,6 @@ def gram_over_time_axis(A):
     """
     Argument:
     A -- matrix of shape (1, n_C, n_H, n_W)
-
     Returns:
     GA -- Gram matrix of A along time axis, of shape (n_C, n_C)
     """
@@ -102,7 +100,6 @@ def compute_layer_style_loss(a_S, a_G):
     Arguments:
     a_S -- tensor of dimension (1, n_C, n_H, n_W)
     a_G -- tensor of dimension (1, n_C, n_H, n_W)
-
     Returns:
     J_style_layer -- tensor representing a scalar style cost.
     """
@@ -121,21 +118,3 @@ def compute_layer_style_loss(a_S, a_G):
     J_style_layer = 1.0 / (4 * (n_C ** 2) * (n_H * n_W)) * torch.sum((GS - GG) ** 2)
 
     return J_style_layer
-
-
-"""
-# Test
-test_S = torch.randn(1, 6, 2, 2)
-test_G = torch.randn(1, 6, 2, 2)
-print(test_S)
-print(test_G)
-print(compute_layer_style_loss(test_S, test_G))
-
-
-# Test
-test_C = torch.randn(1, 6, 2, 2)
-test_G = torch.randn(1, 6, 2, 2)
-print(test_C)
-print(test_G)
-print(compute_content_loss(test_C, test_G))
-"""
